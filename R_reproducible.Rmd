@@ -35,7 +35,7 @@ graphics.off()  # clear all plots
 cat("\014")     # clear console (same as Ctrl-L in console)
 ```
 
-The content started off as a condensed version of this material:
+The content is mostly a condensed version of this material:
 
 [http://swcarpentry.github.io/r-novice-gapminder/](http://swcarpentry.github.io/r-novice-gapminder/)
 
