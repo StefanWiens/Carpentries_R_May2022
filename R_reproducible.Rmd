@@ -1,0 +1,2839 @@
+---
+title: "R for reproducible scientific analysis"
+author: "Stefan Wiens"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    keep_md: true 
+---
+
+```{r setup, include=FALSE}
+#'echo = False' hides *all* code chunks below when knitted 
+#'warning = F' hides *all* warnings messages below when knitted 
+#'message = F' hides *all* messages below when knitted 
+# fig.path directory for figures
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+                      #fig.path = "figures/extra/")
+#options(scipen = 999, digits = 7) # prevent scientific notation
+options(repos = list(CRAN="http://cran.rstudio.com/"))
+```
+
+```{r prepare R, echo = FALSE, include = FALSE}
+# clear memory and set random seed
+rm(list = ls()) # clear memory
+graphics.off()  # clear all plots
+cat("\014")     # clear console (same as Ctrl-L in console)
+```
+
+The content started off as a condensed version of this material:
+
+[http://swcarpentry.github.io/r-novice-gapminder/](http://swcarpentry.github.io/r-novice-gapminder/)
+
+Since then, I have added extra material that I picked up from the R crowd.
+
+I highly recommend this book:
+
+[R for Data Science](https://r4ds.had.co.nz/)
+
+# short-cuts {.tabset}
+
+## R
+
+- `#` comment. Anything that follows after is ignored by R
+- `ctrl + return` run block of code
+- `?` before the name of a command will open the help page for that command. When using RStudio, this will open the ‘Help’ pane. You can also use the function `help(function_name)`
+- `alt + -` produces the assign symbol `<-`
+- `(x <- 5)` if you have parentheses around an assignment, the result will be printed
+- `ctrl + shift + M` to get pipe symbol `%>%`
+- ======
+- `typeof()` determine data type
+- `class()` determine data structure
+- `str()` display structure of an object
+- ======
+- `getwd()` show working directory
+- `setwd()` set working directory
+- `dir()` show files working directory
+- `ls()` show content in Rstudio environment
+- `rm(list = ls())` delete everything in environment
+- ======
+- `install.packages("ggplot2")`to install an R package/library on computer
+- `library("ggplot2")`to activate the package for the current R session
+- `head()` show beginning of file
+- `tail()` show end of file
+- `nrow()` number of rows
+- `c()` combine elements
+- `summary()` display summary
+
+## R markdown
+
+- `ctrl + alt + I` new r code section
+- `ctrl + shift + K` knit whole document
+- `>` for block code
+- `[//]: My comment` The text is not printed at all in the final document
+- `knitr::knit_exit()` If you have this in a code chunk, knitr will exit there. This is useful during debugging.
+- `keep_md: true` With this in front-matter, all figures will be saved as separate files, too.
+
+# **packages** {.tabset}
+
+R mainly works with functions such as `mean(age)`; this computes the mean of age.
+
+Functions always consist of a name and parentheses: `function_name()`
+
+The power of R is the many custom-made packages with useful functions. To add these functions to R, you need to do two things:
+
+- `install(packagename)`: download on your computer
+- `library(packagename)`: load for current R session
+
+There are lots of packages available on **CRAN** (the comprehensive R archive network). 
+
+## finding packages
+
+If you don't know what function or package you need to use: [CRAN Task Views](http://cran.at.r-project.org/web/views) is a specially maintained list of packages grouped into fields. This can be a good starting point.
+
+## basic R
+
+R and RStudio have functionality for managing packages:
+
+* You can see what packages are installed by typing
+  `installed.packages()`
+* You can install packages by typing `install.packages("packagename")`,
+  where `packagename` is the package name, in quotes.
+* You can update installed packages by typing `update.packages()`
+* You can remove a package with `remove.packages("packagename")`
+* You can make a package available for use with `library(packagename)`
+
+Packages can also be viewed, loaded, and detached in the Packages tab of the lower right panel in RStudio. Clicking on this tab will display all of installed packages with a checkbox next to them. If the box next to a package name is checked, the package is loaded and if it is empty, the package is not loaded. Click an empty box to load that package and click a checked box to detach that package. 
+
+Packages can be installed and updated from the Package tab with the Install and Update buttons at the top of the tab.
+
+## pacman
+
+A simple way to install and load packages is with the package `pacman`.
+
+Install this package (e.g., under Tools > Install Packages)
+
+Afterward, run `library(pacman)` or activate the package under the packages tab.
+
+Then, `p_load()` will install and load packages.
+
+```{r, eval = FALSE}
+install.packages("pacman")
+library(pacman)
+p_load(tidyverse, kableExtra, report)
+```
+
+## own solution
+
+**`r version[['version.string']]`**  
+
+```{r}
+packages <- c('tidyverse',     # data handling
+              'kableExtra',    # nicer tables    
+              'report')        # bibliography of packages
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages], repos = c(CRAN = "https://cran.rstudio.com"))
+}
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+
+packv <- NULL
+for (i in 1:length(packages)) {
+  packv = rbind(packv, c(packages[i], as.character(packageVersion(packages[i]))))
+}
+colnames(packv) <- c("Package", "Version") 
+packv %>% 
+  as_tibble %>% 
+  arrange(Package) %>% 
+  kable(align = "l") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## cite packages
+
+The `report` package creates a bibliography of the packages. Unfortunately, my experience is that the information is often sketchy and the formating is a complete mess.
+
+```{r}
+report::cite_packages()
+```
+
+# seeking help {.tabset}
+
+## google
+
+Google works well because it can handle naive questions in everyday language.  
+
+## cheat sheets
+
+RStudio has nice cheat sheets for RStudio and tidyverse packages (under Help > Cheat Sheets > Browse Cheat Sheets).    
+[RStudio cheat sheets](https://www.rstudio.com/resources/cheatsheets/)  
+
+## function help
+
+In R, you can get help for a function:  
+
+`?function_name`
+
+`help(function_name)`
+
+R, and every package, provide help files for functions. Above is the general syntax to search for help on any function that is loaded in your session.
+
+```{r, eval=FALSE}
+?function_name
+help(function_name)
+```
+
+This opens a help page in RStudio (or as plain text in R by itself).
+
+## help pages
+
+Each help page is broken down into sections:
+
+ - Description: An extended description of what the function does.
+ - Usage: The arguments of the function and their default values.
+ - Arguments: An explanation of the data each argument is expecting.
+ - Details: Any important details to be aware of.
+ - Value: The data the function returns.
+ - See Also: Any related functions you might find useful.
+ - Examples: Some examples for how to use the function.
+
+Different functions might have different sections, but these are the main ones you should be aware of.
+
+## special operators
+
+To seek help on special operators, use quotes or backticks:
+
+`?"<-"`
+
+```{r, eval=FALSE}
+?"<-"
+?`<-`
+```
+
+## fuzzy search
+
+If you're not sure what package a function is in, or how it's specifically spelled you can do a fuzzy search:
+
+```{r, eval=FALSE}
+??function_name
+```
+
+# warnings
+
+R often outputs messages in red. Do not freak out. They can be just notifications or warnings. They are added to ensure that you are ok with what R is doing.
+
+If you load several packages, you are likely to see `conflicts` about some function `masking` another function. This means that two functions from different packages have the same name. R uses whatever is loaded last as the default one.
+
+Example:
+
+`dplyr::filter() masks stats::filter()`
+
+This means that if you call `filter()`, R will use the function from the package dplyr.
+
+If you want use both filter functions in your code, you can call a specific function like this:
+
+`stats::filter()`
+
+A handy feature is that if you call a function with `::`, R just requires that the packages is installed on your computer. The package does not have to be loaded at all. This is convenient, but the script will hang up if you share it with somebody who does not that have the function (and package) installed on their computer.
+
+Every now and then, I happen to have installed too many packages that conflict with each other and everything is messed up. For example, `tidyverse` would not work anymore. If so, you might have to remove R and RStudio and reinstall everything.
+
+# update
+
+- Update RStudio 
+  - go to Help
+  - check for Updates
+- Update R: 
+  - start Rgui in Windows
+  - install.packages("installr")
+  - library(installr)
+  - updateR()
+
+# project management
+
+Lots of good information by Carpentries.  
+
+[project management](https://swcarpentry.github.io/r-novice-gapminder/02-project-intro/index.html)
+
+key points:  
+
+- use RStudio to create and manage projects with consistent layout.
+- treat raw data as read-only.
+- treat generated output as disposable.
+- separate definition of function and its application.
+
+[Good Enough Practices for Scientific Computing](https://github.com/swcarpentry/good-enough-practices-in-scientific-computing/blob/gh-pages/good-enough-practices-for-scientific-computing.pdf) gives the following recommendations for project organization:
+
+- Put each project in its own directory, which is named after the project.
+- Put text documents associated with the project in the `doc` directory.
+- Put raw data and metadata in the `data` directory, and files generated during cleanup and analysis in a `results` directory.
+- Put source for the project's scripts and programs in the `src` directory, and programs brought in from elsewhere or compiled locally in the `bin` directory.
+- Name all files to reflect their content or function.
+
+# R basics {.tabset}
+## calculator
+
+```{r}
+1 + 100
+```
+
+```{r}
+3 + 5 * 2
+```
+
+Use parentheses to group operations in order to force the order of evaluation if it differs from the default, or to make clear what you intend.
+
+```{r}
+(3 + 5) * 2
+```
+
+Scientific notation
+
+```{r}
+2/10000
+# format(2/10000, scientific = F) # prevent scientific notation, but creates a character
+```
+
+Which is shorthand for "multiplied by `10^XX`". So `2e-4` is shorthand for `2 * 10^(-4)`.
+
+You can write numbers in scientific notation, too:
+
+```{r}
+5e3  # Note the lack of minus here
+```
+
+## math
+
+R has many built-in mathematical functions. To call a function, type its name, followed by open and closing parentheses. Anything we type inside the parentheses is called the function's arguments:
+
+```{r}
+sin(1)  # trigonometry functions
+```
+
+```{r}
+log(1)  # natural logarithm
+```
+
+```{r}
+log10(10) # base-10 logarithm
+```
+
+```{r}
+exp(0.5) # e^(1/2)
+```
+
+## comparison {.tabset}
+
+### numbers
+
+We can also do comparisons in R:
+
+```{r}
+1 == 1  # equality (note two equals signs, read as "is equal to")
+```
+
+```{r}
+1 != 2  # inequality (read as "is not equal to")
+```
+
+```{r}
+1 < 2  # less than
+```
+
+```{r}
+1 <= 1  # less than or equal to
+```
+
+```{r}
+1 > 0  # greater than
+```
+
+```{r}
+1 >= -9 # greater than or equal to
+```
+
+### warning
+
+A word of warning about comparing numbers: you should never use `==` to compare two numbers unless they are integers (a data type which can specifically represent only whole numbers).
+
+Instead you should use the `all.equal` function.
+
+Further reading: [http://floating-point-gui.de/](http://floating-point-gui.de/)
+
+### %in%
+
+This example shows why it is no good to use `==` if you want to know whether a specific item is in a list.  
+
+Assume that `A` has 10 items: `2 1 1 1 2 1 1 1 1 1`.  
+`B` contains `1` and `2`.  
+
+If we run `A == B`, we get many `FALSE`.
+
+```{r}
+B <- c(1,2)
+seed = 3
+A <- sample(2, 10, replace = TRUE)
+A == B
+```
+
+The reason is that R repeats B five times to fit it into A. Thus, R compares where `A` matches 1,2,1,2,1,2,1,2,1,2.  
+
+`A %in% B` gives us what we want. For each element of `A`, it checks whether it is in `B`. 
+
+```{r}
+A %in% B
+```
+
+## assignment
+We can store values in variables using the assignment operator `<-`.  
+Short cut: `alt + -`
+
+```{r}
+x <- 1/40
+
+```
+
+Notice that assignment does not print a value. Instead, it stores it in a **variable**. `x` now contains the **value** `0.025`:
+
+```{r}
+x
+```
+
+More precisely, the stored value is a *decimal approximation* of this fraction called a [floating point number](http://en.wikipedia.org/wiki/Floating_point).
+
+Look for the `Environment` tab in the top right panel of RStudio, and you will see that `x` and its value have appeared. Our variable `x` can be used in place of a number in any calculation that expects a number:
+
+```{r}
+log(x)
+```
+
+Notice also that variables can be reassigned:
+
+```{r}
+x <- 100
+```
+
+`x` used to contain the value 0.025 and now it has the value 100.
+
+Assignment values can contain the variable being assigned to:
+
+```{r}
+x <- x + 1 #notice how RStudio updates its description of x on the top right tab
+y <- x * 2
+```
+
+The right hand side of the assignment can be any valid R expression.
+The right hand side is *fully evaluated* before the assignment occurs.
+
+It is also possible to use the `=` operator for assignment:
+
+```{r}
+x = 1/40
+```
+
+But this is much less common among R users.  The most important thing is to **be consistent** with the operator you use. There are occasionally places where it is less confusing to use `<-` than `=`, and it is the most common symbol used in the community. So the recommendation is to use `<-`.
+
+## variable names
+
+Variable names can contain letters, numbers, underscores and periods but no spaces. They must start with a letter or a period followed by a letter (they cannot start with a number nor an underscore). 
+Variables beginning with a period are hidden variables. 
+Different people use different conventions for long variable names, these include
+
+  * periods.between.words
+  * underscores\_between_words
+  * camelCaseToSeparateWords
+
+What you use is up to you, but **be consistent**.
+
+## vectorization
+
+One final thing to be aware of is that R is *vectorized*, meaning that variables and functions can have vectors as values. A vector in R describes a set of values in a certain order of the same data type.
+
+```{r}
+1:5
+2^(1:5)
+x <- 1:5
+2^x
+```
+
+This is incredibly powerful.
+
+# play with data frame {.tabset}
+
+One of R's most powerful features is its ability to deal with tabular data that is in a spreadsheet or a CSV file. Let's start by making a toy dataset in your `data/` directory, called `feline-data.csv`:
+
+## make data frame
+
+```{r}
+cats <- data.frame(coat = c("calico", "black", "tabby"),
+                    weight = c(2.1, 5.0, 3.2),
+                    likes_string = c(1, 0, 1))
+                  # likes_string = as.logical(c(1, 0, 1))) # we can force data type
+write.csv(x = cats, file = "data/feline-data.csv", row.names = FALSE)
+```
+
+## load data frame
+
+We can load this into R via the following:
+
+```{r}
+cats <- read.csv(file = "data/feline-data.csv", stringsAsFactors = TRUE)
+# in R 4.0, the default is stringsAsFactors = FALSE; characters will not be converted to factors
+cats
+```
+
+Read in tabular data stored in a text file:
+
+- `read.table`
+- `read.csv` for comma separation
+- `read.delim` for tab separation
+
+If you use `tidyverse`, there are improved functions available.
+
+## explore data
+
+We can begin exploring our dataset right away, pulling out columns by specifying them using the `$` operator:
+
+```{r}
+cats$weight
+cats$coat
+```
+
+We can do other operations on the columns:
+
+```{r}
+## Say we discovered that the scale weighs two Kg light:
+cats$weight + 2
+paste("My cat is", cats$coat)
+```
+
+But what about  
+
+`cats$weight + cats$coat`
+```{r, eval = TRUE}
+cats$weight + cats$coat
+```
+
+Because R does not know how to combine different types of variables, it sets the outcome values to not available.
+
+## stringsAsFactors
+
+Before `R` 4.0, the default was `stringsAsFactors = TRUE` when reading in data files. This meant that any character variables were immediately converted to factors.  
+
+Factors are a data structure and are important for statistical analyses. The user sees character values but `R` represents these internally as numbers.  
+
+This default conversion was confusing, though.  
+
+The example below shows that if a row is added, `R` deletes the character value `tortoiseshell` because it is not a valid factor level.
+
+```{r}
+cats <- data.frame(
+            coat = c("calico", "black", "tabby"),
+            weight = c(2.1, 5.0, 3.2),
+            likes_string = c(1, 0, 1),
+            stringsAsFactors = TRUE)
+
+# if you run the next lines, note how everything is forced into character.
+# newRow <- c("tortoiseshell", 3.3, 0)
+# cats2 <- rbind(cats, newRow)
+
+newRow <- list("tortoiseshell", 3.3, 0)
+(cats2 <- rbind(cats, newRow))
+```
+
+# data types {.tabset}
+
+There are 5 main types: 
+
+- `double`
+- `integer`
+- `complex`
+- `logical`
+- `character`  
+
+No matter how complicated our analyses become, all data in R are interpreted as one of these basic data types.
+
+Use `typeof()` to determine data type
+
+```{r}
+typeof(3.14)
+typeof(1L) 
+# The L suffix forces the number to be an integer,  
+# since by default R uses float numbers
+typeof(1+1i)
+typeof(TRUE)
+typeof('banana')
+```
+
+# data structures {.tabset}
+
+There are 5 main structures: 
+
+- `vector`
+- `data.frame`
+- `matrix`  
+- `factor`
+- `list`
+
+Use `class()` to determine data structure
+
+```{r}
+class(cats)
+```
+
+## vector {.tabset}
+
+### definition
+
+```{r}
+my_vector <- vector(length = 3)
+my_vector
+```
+
+A vector in R is essentially an ordered list of things, with the special condition that *everything in the vector must be the same basic data type*. If you don't choose the datatype, it'll default to `logical`; or, you can declare an empty vector of whatever type you like.
+
+```{r}
+another_vector <- vector(mode='character', length=3)
+another_vector
+```
+
+You can check if something is a vector:
+
+```{r}
+str(another_vector)
+```
+
+You can also make vectors with explicit contents with the combine function:
+
+```{r}
+combine_vector <- c(2,6,3)
+combine_vector
+```
+
+### type coercion
+
+Given what we've learned so far, what do you think the following will produce?
+
+```{r}
+quiz_vector <- c(2,6,'3')
+```
+
+This is called *type coercion*, and it is the source of many surprises and the reason why we need to be aware of the basic data types and how R will interpret them. When R encounters a mix of types (here numeric and character) to be combined into a single vector, it will force them all to be the same type.
+
+The coercion rules go: `logical` -> `integer` -> `numeric` -> `complex` -> `character`, where -> can be read as *are transformed into*. You can try to force coercion against this flow using the `as.` functions:
+
+```{r}
+character_vector_example <- c('0','2','4')
+character_vector_example
+character_coerced_to_numeric <- as.numeric(character_vector_example)
+character_coerced_to_numeric
+numeric_coerced_to_logical <- as.logical(character_coerced_to_numeric)
+numeric_coerced_to_logical
+```
+
+### basics
+
+The combine function, `c()`, will also append things to an existing vector:
+
+```{r}
+ab_vector <- c('a', 'b')
+ab_vector
+combine_example <- c(ab_vector, 'SWC')
+combine_example
+```
+
+You can also make series of numbers:
+
+```{r}
+mySeries <- 1:10
+mySeries
+seq(10)
+seq(1,10, by=0.1)
+```
+
+We can ask a few questions about vectors:
+
+```{r}
+sequence_example <- seq(10)
+head(sequence_example, n=2)
+tail(sequence_example, n=4)
+length(sequence_example)
+class(sequence_example)
+typeof(sequence_example)
+```
+
+Finally, you can give names to elements in your vector:
+
+```{r}
+my_example <- 5:8
+names(my_example) <- c("a", "b", "c", "d")
+my_example
+names(my_example)
+```
+
+## data.frame
+
+Data frames have column names, which can be accessed with the `names()` function.
+
+```{r}
+names(cats)
+```
+
+If you want to rename the second column of `cats`, you can assign a new name to the second element of `names(cats)`.
+
+```{r}
+cats2 <- cats
+names(cats2)[2] <- "weight_kg"
+cats2
+rm(cats2)
+```
+
+## matrix
+
+We can declare a matrix full of zeros:
+
+```{r}
+matrix_example <- matrix(0, ncol=6, nrow=3)
+matrix_example
+```
+
+And similar to other data structures, we can ask things about our matrix:
+
+```{r}
+class(matrix_example)
+typeof(matrix_example)
+str(matrix_example)
+dim(matrix_example)
+nrow(matrix_example)
+ncol(matrix_example)
+```
+
+## factor
+
+Another important data structure is called a *factor*. Factors usually look like character data, but are typically used to represent categorical information. For example, let's make a vector of strings labelling cat colorations for all the cats in our study:
+
+```{r}
+coats <- c('tabby', 'tortoiseshell', 'tortoiseshell', 'black', 'tabby')
+coats
+str(coats)
+```
+
+We can turn a vector into a factor like so:
+
+```{r}
+CATegories <- factor(coats)
+class(CATegories)
+str(CATegories)
+```
+
+Now R has noticed that there are three possible categories in our data - but it also did something surprising; instead of printing out the strings we gave it, we got a bunch of numbers instead. R has replaced our human-readable categories with numbered indices under the hood, this is necessary as many statistical calculations use such numerical representations for categorical data:
+
+```{r}
+typeof(coats)
+typeof(CATegories)
+```
+
+When applying modeling functions, it's important to know what the baseline levels are.  This is assumed to be the first factor, but by default factors are labeled in alphabetical order. You can change this by specifying the levels:
+
+```{r}
+mydata <- c("case", "control", "control", "case")
+factor_ordering_example <- factor(mydata, levels = c("control", "case"))
+str(factor_ordering_example)
+```
+
+In this case, we've explicitly told R that "control" should be represented by 1, and "case" by 2. This designation can be very important for interpreting the results of statistical models!
+
+## list
+
+Another data structure you'll want in your bag of tricks is the `list`. A list is simpler in some ways than the other types, because you can put anything you want in it:
+
+```{r}
+list_example <- list(1, "a", TRUE, 1+4i)
+list_example
+another_list <- list(title = "Numbers", numbers = 1:10, data = TRUE )
+another_list
+```
+
+We can now understand something a bit surprising in our data.frame; what happens if we run:
+
+```{r}
+typeof(cats)
+```
+
+We see that data.frames look like lists 'under the hood' - this is because a data.frame is really a list of vectors and factors, as they have to be - in order to hold those columns that are a mix of vectors and factors, the data.frame needs something a bit more flexible than a vector to put all the columns together into a familiar table.  In other words, a `data.frame` is a special list in which all the vectors must have the same length.
+
+In our `cats` example, we have an integer, a double and a logical variable. As we have seen already, each column of data.frame is a vector.
+
+```{r}
+cats$coat
+cats[,1]
+typeof(cats[,1])
+str(cats[,1])
+```
+
+Each row is an *observation* of different variables, itself a data.frame, and thus can be composed of elements of different types.
+
+```{r}
+cats[1,]
+typeof(cats[1,])
+str(cats[1,])
+```
+
+# Basic R: manipulate df {.tabset}
+
+## cbind
+
+add columns
+
+```{r, echo = FALSE}
+cats <- read.csv("data/feline-data.csv", stringsAsFactors = TRUE)
+age <- c(2, 3, 5)
+cats
+```
+
+We can then add this as a column via:
+
+```{r}
+cbind(cats, age)
+```
+
+Note that if we tried to add a vector of ages with a different number of entries than the number of rows in the data frame, it would fail:
+
+```{r, error=TRUE}
+age <- c(2, 3, 5, 12)
+cbind(cats, age)
+
+age <- c(2, 3)
+cbind(cats, age)
+```
+
+Why didn't this work? Of course, R wants to see one element in our new column for every row in the table:
+
+```{r}
+nrow(cats)
+length(age)
+```
+
+So for it to work we need to have `nrow(cats)` = `length(age)`.
+
+## rbind
+
+Add rows
+
+Now how about adding rows? We already know that the rows of a
+data frame are lists:
+
+`newRow <- list("tortoiseshell", 3.3, TRUE, 9)`  
+`cats2 <- rbind(cats, newRow)`
+
+```{r}
+newRow <- list("tortoiseshell", 3.3, TRUE, 9)
+cats2 <- rbind(cats, newRow)
+```
+
+Looks like our attempt to use the `rbind()` function returns a warning.  Recall that, unlike errors, warnings do not necessarily stop a function from performing its intended action. You can confirm this by taking a look at the `cats` data frame.
+
+```{r}
+cats2
+```
+
+Notice that not only did we successfully add a new row, but there is `NA` in the column *coats* where we expected "tortoiseshell" to be.  Why did this happen?
+
+For an object containing the data type `factor`, each different value represents what is called a `level`. In our case, the `factor` "coat" has 3 levels: "black", "calico", and "tabby". R will only accept values that match one of the levels. If you add a new value, it will become `NA`.
+
+The warning is telling us that we unsuccessfully added "tortoiseshell" to our *coat* factor, but 3.3 (a numeric), TRUE (a logical), and 9 (a numeric) were successfully added to *weight*, *likes_string*, and *age*, respectively, since those variables are not factors. To successfully add a cat with a "tortoiseshell" *coat*, add "tortoiseshell" as a possible *level* of the factor:
+
+```{r}
+levels(cats$coat)
+levels(cats$coat) <- c(levels(cats$coat), "tortoiseshell")
+cats <- rbind(cats, list("tortoiseshell", 3.3, TRUE, 9))
+```
+
+Alternatively, we can change a factor into a character vector; we lose the
+handy categories of the factor, but we can subsequently add any word we want to the column without babysitting the factor levels:
+
+```{r}
+str(cats)
+cats$coat <- as.character(cats$coat)
+str(cats)
+```
+
+## remove data
+
+remove column
+
+```{r}
+cats[,-3]
+cats[, ! names(cats) %in% c("weight")]
+```
+
+Notice the comma with nothing before it to indicate that we want to drop the entire column.
+
+remove row
+```{r}
+cats[-4, ]
+```
+
+Notice the comma with nothing after it to indicate that we want to drop the entire fourth row.
+
+Note: we could also remove any rows at once by putting the row numbers
+inside of a vector: `cats[c(-2,-4), ]`
+
+Alternatively, we can drop all rows with `NA` values:
+
+```{r}
+na.omit(cats)
+```
+
+## append
+
+The key to remember when adding data to a data frame is that **columns are vectors and rows are lists.** We can also glue two data frames together with `rbind`:
+
+```{r}
+cats <- rbind(cats, cats)
+cats
+```
+
+
+# **import data** {.tabset}
+
+Lots of functionality in basic R and through `tidyverse`. 
+
+[cheat sheet](https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf)
+
+Let's work with the `gapminder` dataset.
+
+## local file
+
+If the files is saved on our local drive, we can load it.
+
+`gapminder_local <- read.csv("data/gapminder_data.csv")`
+
+```{r}
+gap <- read.csv("data/gapminder_data.csv")
+```
+
+```{r}
+head(gap)
+```
+
+## direct URL
+
+If we have a URL, we can assign it directly to an R object (but no file is saved locally):
+
+`gapminder_URL <- read_csv(url("https://fill_in_complete_link_here/gapminder_data.csv"))`  
+
+Generally, this is not recommended because the data are not stored locally on disk. 
+
+```{r}
+gapminder_URL <- read_csv(url("https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/gh-pages/_episodes_rmd/data/gapminder_data.csv"), show_col_types = FALSE)
+```
+
+## URL with save
+
+Better alternative: If we have a URL, we can download the file and save it locally:
+
+`download.file("https://fill_in_complete_link_here/gapminder_data.csv",`  
+`   destfile = "data/gapminder_data_download.csv")`  
+
+```{r}
+download.file("https://raw.githubusercontent.com/swcarpentry/r-novice-gapminder/gh-pages/_episodes_rmd/data/gapminder_data.csv", destfile = "data/gapminder_data.csv")
+```
+
+## part of package
+
+Sometimes, the data are part of a package. The `gapminder` dataset is included in the package `gapminder`. 
+
+We access it with the term `gapminder` (even though it may not be visible in the R environment).
+
+To make it visible in the environment, assign it.
+
+```{r, eval = FALSE}
+install.packages("gapminder")
+library(gapminder)
+head(gapminder)
+df_gapminder <- gapminder 
+# gapminder <- gapminder # we would overwrite the content of gapminder
+```
+
+# **export data**
+
+Lots of functionality in basic R and through `tidyverse`. 
+
+[cheat sheet](https://raw.githubusercontent.com/rstudio/cheatsheets/main/data-import.pdf)
+
+I prefer `.tsv` files because they are tab-separated and avoid commas and points as delimiters.
+
+```{r}
+write_tsv(gap, file.path('results/gap_export.tsv'))
+```
+
+# quick look at data {.tabset}
+
+```{r}
+str(gap)
+```
+
+An additional method for examining the structure of gapminder is to use the `summary` function. This function can be used on various objects in R. For data frames, `summary` yields a numeric, tabular, or descriptive summary of each column. Factor columns are summarized by the number of items in each level, numeric or integer columns by the descriptive statistics (quartiles and mean), and character columns by its length, class, and mode.  
+
+```{r}
+summary(gap$year)
+```
+
+Along with the `str` and `summary` functions, we can examine individual columns of the data frame with our `typeof` function:
+
+```{r}
+typeof(gap$year)
+typeof(gap$country)
+str(gap$country)
+```
+
+We can also interrogate the data frame for information about its dimensions;
+remembering that `str(gapminder)` said there were 1704 observations of 6
+variables in gapminder, what do you think the following will produce, and why?
+
+`length(gapminder)`
+
+```{r}
+length(gap)
+# 6
+```
+
+A fair guess would have been to say that the length of a data frame would be the number of rows it has (1704), but this is not the case; remember, a data frame is a *list of vectors and factors*:
+
+```{r}
+typeof(gap)
+```
+
+When `length` gave us 6, it's because gapminder is built out of a list of 6
+columns. To get the number of rows and columns in our dataset, try:
+
+```{r}
+nrow(gap)
+ncol(gap)
+```
+
+Or, both at once:
+
+```{r}
+dim(gap)
+```
+
+We'll also likely want to know what the titles of all the columns are, so we can ask for them later:
+
+```{r}
+colnames(gap)
+```
+
+At this stage, it's important to ask ourselves if the structure R is reporting matches our intuition or expectations; do the basic data types reported for each column make sense? If not, we need to sort any problems out now before they turn into bad surprises down the road, using what we've learned about how R interprets data, and the importance of *strict consistency* in how we record our data.
+
+Once we're happy that the data types and structures seem reasonable, it's time to start digging into our data proper. Check out the first few lines:
+
+```{r}
+head(gap)
+```
+
+# Basic R: data subsetting {.tabset}
+
+R has many powerful subset operators. Mastering them will allow you to
+easily perform complex operations on any kind of dataset.
+
+There are six different ways we can subset any kind of object, and three
+different subsetting operators for the different data structures.
+
+## vector {.tabset}
+
+Let's start with the workhorse of R: a simple numeric vector.
+
+```{r}
+x <- c(5.4, 6.2, 7.1, 4.8, 7.5)
+names(x) <- c('a', 'b', 'c', 'd', 'e')
+x
+```
+
+### by index
+
+```{r}
+x[4]
+```
+
+It may look different, but the square brackets operator is a function. For vectors (and matrices), it means "get me the nth element".
+
+We can ask for multiple elements at once:
+
+```{r}
+x[c(1, 3)]
+```
+
+Or slices of the vector:
+
+```{r}
+x[1:4]
+```
+
+The `:` operator creates a sequence of numbers from the left element to the right.
+
+```{r}
+1:4
+c(1, 2, 3, 4)
+```
+
+We can ask for the same element multiple times:
+
+```{r}
+x[c(1,1,3)]
+```
+
+If we ask for an index beyond the length of the vector, R will return a missing value:
+
+```{r}
+x[6]
+```
+
+This is a vector of length one containing an `NA`, whose name is also `NA`.
+
+If we ask for the 0th element, we get an empty vector:
+
+```{r}
+x[0]
+```
+
+In many programming languages (C and Python, for example), the first
+element of a vector has an index of 0. In R, the first element is 1.
+
+If we use a negative number as the index of a vector, R will return
+every element *except* for the one specified:
+
+```{r}
+x[-2]
+```
+
+We can skip multiple elements:
+
+```{r}
+x[c(-1, -5)]  # or x[-c(1,5)]
+```
+
+Exclude consecutive items
+
+```{r}
+x[-(1:3)]
+```
+
+### by name
+
+We can extract elements by using their name, instead of extracting by index:
+
+```{r}
+x <- c(a=5.4, b=6.2, c=7.1, d=4.8, e=7.5) # we can name a vector 'on the fly'
+x[c("a", "c")]
+```
+
+This is usually a much more reliable way to subset objects: The position of various elements can often change when chaining together subsetting operations, but the names will always remain the same!
+
+### by logic
+
+We can also use any logical vector to subset:
+
+```{r}
+x[c(FALSE, FALSE, TRUE, FALSE, TRUE)]
+```
+
+Since comparison operators (e.g. `>`, `<`, `==`) evaluate to logical vectors, we can also use them to succinctly subset vectors: the following statement gives the same result as the previous one.
+
+```{r}
+x[x > 7]
+```
+
+Breaking it down, this statement first evaluates `x>7`, generating a logical vector `c(FALSE, FALSE, TRUE, FALSE, TRUE)`, and then selects the elements of `x` corresponding to the `TRUE` values.
+
+We can use `==` to mimic the previous method of indexing by name (remember you have to use `==` rather than `=` for comparisons):
+
+```{r}
+x[names(x) == "a"]
+```
+
+We often want to combine multiple logical criteria. For example, we might want to find all the countries that are located in Asia **or** Europe **and** have life expectancies within a certain range. Several operations for combining logical vectors exist in R:
+
+- `&`, the "logical AND" operator: returns `TRUE` if both the left and right are `TRUE`.
+- `|`, the "logical OR" operator: returns `TRUE`, if either the left or right (or both) are `TRUE`.
+
+You may sometimes see `&&` and `||` instead of `&` and `|`. These two-character operators only look at the first element of each vector and ignore the remaining elements. In general you should not use the two-character operators in data analysis; save them for programming, 
+i.e., deciding whether to execute a statement.
+
+- `!`, the "logical NOT" operator: converts `TRUE` to `FALSE` and `FALSE` to
+   `TRUE`. It can negate a single logical condition (eg `!TRUE` becomes
+   `FALSE`), or a whole vector of conditions(eg `!c(TRUE, FALSE)` becomes
+   `c(FALSE, TRUE)`).
+
+Additionally, you can compare the elements within a single vector using the `all` function (which returns `TRUE` if every element of the vector is `TRUE`) and the `any` function (which returns `TRUE` if one or more elements of the vector are `TRUE`).  
+
+### skip named elements
+
+Suppose we want to drop the `"a"` and `"c"` elements.
+The `%in%` operator goes through each element of its left argument, in this case the names of `x`, and asks, "Does this element occur in the second argument?". Here, since we want to *exclude* values, we also need a `!` operator to change "in" to "not in":
+
+```{r}
+x[! names(x) %in% c("a","c") ]
+```
+
+### handling special values
+
+At some point you will encounter functions in R that cannot handle missing, infinite, or undefined data.
+
+There are a number of special functions you can use to filter out this data:
+
+- `is.na` will return all positions in a vector, matrix, or data.frame
+   containing `NA` (or `NaN`)
+- likewise, `is.nan`, and `is.infinite` will do the same for `NaN` and `Inf`.
+- `is.finite` will return all positions in a vector, matrix, or data.frame
+   that do not contain `NA`, `NaN` or `Inf`.
+- `na.omit` will filter out all missing values from a vector
+
+## data frame
+
+Remember that data frames are lists underneath the hood, so similar rules apply. However they are also two dimensional objects:
+
+`[` with one argument will act the same way as for lists, where each list element corresponds to a column. The resulting object will be a data frame:
+
+```{r}
+head(gap[3])
+```
+
+Similarly, `[[` will act to extract *a single column*:
+
+```{r}
+head(gap[["lifeExp"]])
+```
+
+And `$` provides a convenient shorthand to extract columns by name:
+
+```{r}
+head(gap$year)
+```
+
+With two arguments, `[` behaves the same way as for matrices:
+
+```{r}
+gap[1:3,]
+```
+
+If we subset a single row, the result will be a data frame (because the elements are mixed types):
+
+```{r}
+gap[3,]
+```
+
+But for a single column the result will be a vector (this can be changed with the third argument, `drop = FALSE`).
+
+## matrix
+
+Matrices are also subsetted using the `[` function. In this case it takes two arguments: the first applies to the rows, the second to its columns:
+
+```{r}
+set.seed(1)
+m <- matrix(rnorm(6*4), ncol=4, nrow=6)
+m[3:4, c(3,1)]
+```
+
+You can leave the first or second arguments blank to retrieve all the rows or columns respectively:
+
+```{r}
+m[, c(3,4)]
+```
+
+If we only access one row or column, R will automatically convert the result to a vector:
+
+```{r}
+m[3,]
+```
+
+If you want to keep the output as a matrix, you need to specify a *third* argument; `drop = FALSE`:
+
+```{r}
+m[3, , drop = FALSE]
+```
+
+Unlike vectors, if we try to access a row or column outside of the matrix, R will throw an error:
+
+```{r, error=TRUE}
+m[, c(3,6)]
+```
+
+Because matrices are vectors, we can also subset using only one argument:
+
+```{r}
+m[5]
+```
+
+This usually isn't useful and often confusing to read. However, it is useful to note that matrices are laid out in *column-major format* by default. That is, the elements of the vector are arranged column-wise:
+
+```{r}
+matrix(1:6, nrow=2, ncol=3)
+```
+
+If you wish to populate the matrix by row, use `byrow = TRUE`:
+
+```{r}
+matrix(1:6, nrow=2, ncol=3, byrow = TRUE)
+```
+
+Matrices can also be subsetted using their rownames and column names instead of their row and column indices.
+
+```{r}
+tmp <- matrix(1:6, nrow=2, ncol=3, byrow = TRUE)
+colnames(tmp) <- c("varx", "vary", "varz")
+tmp[, "vary"]
+rm(tm)
+```
+
+## factor
+
+Factor subsetting works the same way as vector subsetting.
+
+```{r}
+f <- factor(c("a", "a", "b", "c", "c", "d"))
+f[f == "a"]
+f[f %in% c("b", "c")]
+f[1:3]
+```
+
+Skipping elements will not remove the level even if no more of that category exists in the factor:
+
+```{r}
+f[-3]
+```
+
+## list
+
+There are three functions used to subset lists. We've already seen these when learning about atomic vectors and matrices:  `[`, `[[`, and `$`.
+
+Using `[` will always return a list. If you want to *subset* a list, but not *extract* an element, then you will likely use `[`.
+
+```{r}
+xlist <- list(a = "Software Carpentry", b = 1:10, data = head(mtcars))
+xlist[1]
+```
+
+This returns a *list with one element*.
+
+We can subset elements of a list exactly the same way as atomic vectors using `[`. 
+
+```{r}
+xlist[1:2]
+```
+
+To extract individual elements of a list, you need to use the double-square bracket function: `[[`.
+
+```{r}
+xlist[[1]]
+```
+
+Notice that now the result is a vector, not a list.
+
+You can't extract more than one element at once:
+
+```{r, error=TRUE}
+xlist[[1:2]]
+```
+
+Nor use it to skip elements:
+
+```{r, error=TRUE}
+xlist[[-1]]
+```
+
+But you can use names to both subset and extract elements:
+
+```{r}
+xlist[["a"]]
+```
+
+The `$` function is a shorthand way for extracting elements by name:
+
+```{r}
+xlist$data
+```
+
+`attributes()` gives an overview of what is in a list.
+
+```{r}
+attributes(xlist)
+```
+
+# vectorization {.tabset}
+
+Most of R's functions are vectorized, meaning that the function will operate on all elements of a vector without needing to loop through and act on each element one at a time. This makes writing code more concise, easy to read, and less error prone.
+
+## basics
+
+```{r}
+x <- 1:4
+x * 2
+```
+
+The multiplication happened to each element of the vector.
+
+We can also add two vectors together:
+
+```{r}
+y <- 6:9
+x + y
+```
+
+Each element of `x` was added to its corresponding element of `y`:
+
+```{r, eval=FALSE}
+x:  1  2  3  4
+    +  +  +  +
+y:  6  7  8  9
+---------------
+    7  9 11 13
+```
+
+## comparison
+
+Comparison operators, logical operators, and many functions are vectorized.
+
+Comparison operators
+
+```{r}
+x > 2
+```
+
+Logical operators
+
+```{r}
+(a <- x > 1 & x < 4)
+```
+
+Tip: some useful functions for logical vectors
+
+`any()` will return `TRUE` if *any* element of a vector is `TRUE`.
+
+`all()` will return `TRUE` if *all* elements of a vector are `TRUE`.
+
+# **tidy data** {.tabset}
+
+There are three interrelated rules which make a dataset tidy:
+
+- Each variable must have its own column.
+- Each observation must have its own row.
+- Each value must have its own cell.
+
+Resource: [tidy data definition](https://r4ds.had.co.nz/tidy-data.html)
+
+The `tidy data` approach is very influential because it is more intuitive than basic R.
+
+If you want to learn about R programming with tidy data: [R for Data Science](https://r4ds.had.co.nz/)
+
+# **tidyverse: manipulate df** {.tabset}
+
+`tidyverse` is just a function that loads many other packages such as `dplyr`, `tidyr`, and `ggplot2`.
+
+Note: `tidyverse` contains 30 packages! If you know exactly which ones you use, then I would load only those to avoid conflicts with other packages.
+
+Install and load `tidyverse`:
+
+```{r, eval = FALSE}
+install.packages('tidyverse')
+library('tidyverse')
+```
+
+Useful commands:  
+
+- `pipe()` to do functions after each other
+- `select()` to choose some variables
+- `filter()` to choose some rows
+- `group_by()` to group rows together
+- `summarize()` to summarize each group
+- `count()` and `n()` to get counts
+- `mutate()` to compute a new variable
+- `rename()` to rename a variable
+- `pivot_longer()` to go from wide to longer layout
+- `pivot_wider()` to go from long to wider layout
+
+Let's work with the `gapminder` data. They are tidy data.
+
+## pipe
+
+The pipe symbol is this: `%>%`.
+
+Meaning: **Then** do this.
+
+The piped commands are applied in steps. We can easily combine many steps. The order of operations is very important.
+
+`ctrl + shift + M` is short-cut to get the pipe symbol `%>%`  
+
+```{r, eval = TRUE}
+gap <- read.csv("data/gapminder_data.csv")
+gap %>%
+   filter(continent == "Oceania") %>%  # choose rows
+   ggplot(aes(x = year, y = lifeExp, color = country)) +  # make plot
+      geom_line() 
+gap %>%
+   # get the start letter of each country
+   mutate(startsWith = substr(country, start = 1, stop = 1)) %>%
+   # filter countries that start with "A" or "Z"
+   filter(startsWith %in% c("A", "Z")) %>%
+   # Make the plot
+   ggplot(aes(x = year, y = lifeExp, color = continent)) +
+      geom_line() +
+      facet_wrap( ~ country)
+```
+
+## select
+
+`select()` to choose some variables
+
+```{r, eval = TRUE}
+(year_country_gdp <- select(gap, country, year, gdpPercap))
+year_country_gdp2 <- select(gap, -c(pop, lifeExp, continent))
+identical(year_country_gdp, year_country_gdp2)
+```
+
+with pipe
+
+```{r, eval = TRUE}
+(year_country_gdp <- gap  %>% select(year, country, gdpPercap))
+```
+
+## filter
+
+`filter()` to choose some rows
+
+```{r, eval = TRUE}
+year_country_gdp_euro <- gap %>%
+    filter(continent == "Europe" & gdpPercap < 2000) %>% 
+    select(year, country, gdpPercap)
+year_country_gdp_euro
+```
+
+## group_by
+
+`group_by()` to group rows together
+
+Mostly used together with `summarise` to compute some statistics for each group.
+
+```{r, eval = TRUE}
+year_country_gdp_euro <- gap %>%
+    group_by(continent)
+year_country_gdp_euro
+```
+
+## summarise
+
+summarise and summarize should be identical.  
+
+`summarise()` to summarize each group
+
+```{r, eval = TRUE}
+year_country_gdp_euro <- gap %>%
+    group_by(continent) %>% 
+    summarise(mean_gdpPercap = mean(gdpPercap))
+year_country_gdp_euro
+```
+
+You can conduct several summary operations at once; in this case calculating the `minimum`, `maximum`, `mean` and `se` of each continent's per-country life-expectancy:
+
+```{r, eval = TRUE}
+gap %>%
+    group_by(continent) %>%
+    summarise(
+      mean_le = mean(lifeExp),
+      min_le = min(lifeExp),
+      max_le = max(lifeExp),
+      se_le = sd(lifeExp)/sqrt(n()))
+```
+
+Summarise might give you a warning message like this:
+
+```
+`summarise()` has grouped output by 'continent'. You can override using the
+`.groups` argument.
+```
+
+You get this when you have more than a single grouping variable, as here:
+
+`group_by(continent, year)`
+
+```{r}
+gdp_pop_bycontinents_byyear <- gap %>%
+    group_by(continent, year) %>%
+    summarise(mean = mean(gdpPercap))
+```
+
+R assumes that you want to keep the grouping. Once it did the continent-year grouping and ran summarise, there is only one case per group and grouping is meaningless. But, R can maintain groups by grouping by `continent`. This is what the message tells you.
+
+If you do not want any grouping after the summarise, use the suggested option to avoid the warning:
+
+```{r}
+gdp_pop_bycontinents_byyear <- gap %>%
+    group_by(continent,year) %>%
+    summarise(mean = mean(gdpPercap), 
+              .groups = "drop")
+```
+
+## count()
+
+Count the number of observations for each group. Good for quick overview.
+
+For instance, if we wanted to check the number of countries included in the dataset for the year 2002, we can use the `count()` function. It takes the name of one or more columns that contain the groups we are interested in, and we can optionally sort the results in descending order by adding `sort = TRUE`:
+
+```{r, eval = TRUE}
+gap %>%
+    filter(year == 2002) %>%
+    count(continent, sort = TRUE)
+```
+
+We can have several grouping variables.
+
+```{r, eval = TRUE}
+gap %>%
+    count(continent, year, sort = TRUE)
+```
+
+## n()
+
+Save the number of observations in a variable.
+
+```{r, eval = TRUE}
+gap %>%
+    group_by(continent) %>%
+    summarize(se_le = sd(lifeExp)/sqrt(n()))
+```
+
+## mutate
+
+`mutate()` to compute a new variable  
+
+New variables can be used immediately within the same pipe!
+
+```{r, eval = TRUE}
+gdp_pop_bycontinents_byyear <- gap %>%
+    mutate(gdp_billion = gdpPercap*pop/10^9) %>%
+    group_by(continent, year) %>%
+    summarize(mean_gdpPercap = mean(gdpPercap),
+              sd_gdpPercap = sd(gdpPercap),
+              mean_pop = mean(pop),
+              sd_pop = sd(pop),
+              mean_gdp_billion = mean(gdp_billion),
+              sd_gdp_billion = sd(gdp_billion),
+               .groups = "drop")
+gdp_pop_bycontinents_byyear
+```
+
+Use `ifelse()` to recode your data.
+
+```{r, eval = TRUE}
+## keeping all data but "filtering" after a certain condition
+# calculate GDP only for people with a life expectation above 25
+gdp_pop_bycontinents_byyear_above25 <- gap %>%
+    mutate(gdp_billion = ifelse(lifeExp > 25, gdpPercap * pop / 10^9, NA)) %>%
+    group_by(continent, year) %>%
+    summarize(mean_gdpPercap = mean(gdpPercap),
+              sd_gdpPercap = sd(gdpPercap),
+              mean_pop = mean(pop),
+              sd_pop = sd(pop),
+              mean_gdp_billion = mean(gdp_billion),
+              sd_gdp_billion = sd(gdp_billion),
+              .groups = "drop")
+gdp_pop_bycontinents_byyear_above25
+
+## updating only if certain condition is fullfilled
+# for life expectations above 40 years, the gpd to be expected in the future is scaled
+gdp_future_bycontinents_byyear_high_lifeExp <- gap %>%
+    mutate(gdp_futureExpectation = ifelse(lifeExp > 40, 
+                                          gdpPercap * 1.5, gdpPercap)) %>%
+    group_by(continent, year) %>%
+    summarize(mean_gdpPercap = mean(gdpPercap),
+              mean_gdpPercap_expected = mean(gdp_futureExpectation),
+              .groups = "drop")
+```
+
+## rename
+
+`rename()` to rename a variable
+
+When thinking about the order `new name = old name`, it helps to think of this similar to assignment. Take what is to the right (old) and assign it to the left (new).
+
+```{r, eval = TRUE}
+tidy_gdp <- year_country_gdp %>% rename(gdp_per_capita = gdpPercap)
+```
+
+## pivot_longer
+
+`pivot_longer()` to go from wide to long layout  
+
+The 'long' layout or format:  
+
+- each row is a single value
+- columns say something about the attributes
+- columns may no longer capture a single variable
+
+The long data format is the most common input to most packages in R! If you are used to spreadsheet programs, this is very confusing at the beginning. It takes some getting used to.
+
+Let's assume we have these data on population per year.
+
+```{r, eval = TRUE}
+# The challenge with pivot_wider is that if except for the names_from and values_from variables, the entries in the other rows have to be identical.
+gapw <- gap %>%  
+  group_by(continent, year) %>% 
+  summarise(pop = mean(pop),
+            .groups = "drop") %>%
+  select(continent, year, pop) %>% 
+  pivot_wider(names_from = year,
+              values_from = pop)
+gapw
+
+# If you try this to create a wide file, it explodes!
+gap %>%  
+  pivot_wider(names_from = year,
+              values_from = pop)
+# The reason is that each country-continent combination differs not only in year but also in lifeExp and gdpPercap. R cannot match the rows and needs to represent each combination in a separate row.
+```
+
+Anyway, the file is wide but R (eg ggplot) wants long format.
+
+Turn this into long format and plot. Notice how simple the R code is to plot. If we had wide format, we would have to specify all the relevant columns.
+
+```{r}
+gapL <- gapw %>%
+     pivot_longer(cols = "1952":"2007",
+                  names_to = "year",
+                  values_to = "pop") %>% 
+     mutate(year = as.integer(year)) # otherwise, plotting does not work
+ggplot(data = gapL, 
+       mapping = aes(x = year, y = pop, color = continent)) +
+  geom_line()
+```
+
+## pivot_wider
+
+`pivot_wider()` to go from long to wide layout
+
+For the 'wide' format, each row is often a site/subject/patient and you have multiple observation variables containing the same type of data. These can be either repeated observations over time, or observation of multiple variables (or a mix of both).
+
+```{r, eval=FALSE}
+gapW <- gapL %>%
+     pivot_wider(names_from = year,
+                 values_from = pop)
+identical(gapw, gapW)
+```
+
+## fancy examples
+
+Descriptives summary table
+
+```{r}
+gap %>%
+  select(-country) %>% 
+  pivot_longer(cols = c(pop, lifeExp, gdpPercap),
+               names_to = "measure",
+               values_to = "values") %>% 
+  group_by(continent, year, measure) %>% 
+  summarise(m_sd = sprintf("%.2f (%.2f)", 
+                           mean(values, na.rm = TRUE),
+                           sd(values, na.rm = TRUE)),
+            .groups = "drop") %>% 
+  unite(cont_measure, continent, measure, sep = "_") %>% 
+  pivot_wider(names_from = cont_measure,
+              values_from = m_sd) %>% 
+  rename(Year = year) %>% 
+  arrange(Year)
+```
+
+complex data manipulation
+
+```{r, eval = TRUE}
+gap %>%
+     pivot_longer(cols = c(pop, lifeExp, gdpPercap),
+                  names_to = "obs_type",values_to = "values") %>%
+     unite(ID_var,continent,country,sep = "_") %>%
+     unite(var_names,obs_type,year,sep = "_") %>%
+     pivot_wider(names_from = var_names, values_from = values) %>%
+     separate(ID_var, into = c('continent','country'), sep = '_')
+```
+
+# **graphics: ggplot2** {.tabset}
+
+We use `ggplot2`:  
+[cheat]: https://www.rstudio.org/links/data_visualization_cheat_sheet  
+[ggplot-doc]: https://ggplot2.tidyverse.org/reference/  
+`ggplot` is included in the tidyverse package.
+
+Excellent resource: [R for Data Science book](https://r4ds.had.co.nz/)
+
+## layers {.tabset}
+
+Grammar of graphics:  
+
+1. data set
+2. coordinate system
+3. geom (geometric object)
+
+Each figure consists of layers
+
+```{r}
+library("ggplot2")
+```
+
+### basic example
+
+Let's work a simpler version of the gapminder dataset.
+
+```{r}
+gap2 <- gap %>%  
+  group_by(continent, year) %>% 
+  summarise(pop = mean(pop),
+            .groups = "drop") %>%
+  select(continent, year, pop)
+```
+
+We define data set and a coordinate system (aes) but not an object.
+
+`aes` = aesthetic properties (e.g., x and y)
+
+```{r}
+ggplot(data = gap2, 
+       mapping = aes(x = year, y = pop, color = continent))
+```
+
+`geom_point()` informs R that we want a point object.
+
+```{r}
+ggplot(data = gap2, 
+       mapping = aes(x = year, y = pop, color = continent)) +
+  geom_point()
+```
+
+But a line object may be better: `geom_line()`
+
+Note the **color** *aesthetic*, which tells `ggplot` to group and color-code by continent.
+
+```{r}
+ggplot(data = gap2, 
+       mapping = aes(x = year, y = pop, color = continent)) +
+  geom_line()
+```
+
+Now, we can add options to change features as we please.
+
+The cheat sheet is very useful:
+
+[cheat sheet](https://www.rstudio.org/links/data_visualization_cheat_sheet)  
+
+Or google
+
+```{r}
+ggplot(data = gap2, 
+       mapping = aes(x = year, y = pop, color = continent)) +
+  geom_line() +
+  labs(x = "Years",
+       y = "Population",
+       title = "Population over time", 
+       subtitle = "per continent",
+       color = "blabla") +  # this is overwritten with scale_color_manual
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  scale_color_manual("Continents", 
+                     values = c("blue", "green", "red", "black", "yellow"))
+```
+
+The `aes` function defines a *mapping* between data variables and their visual representation. A setting outside of the `aes()` function will cause this value to be used for all points.
+
+Here, moving the `color = continent` outside of `aes` ruins the plot.
+
+```{r}
+ggplot(data = gap2, 
+       mapping = aes(x = year, y = pop), color = continent) +
+  geom_line()
+```
+
+### fancy example
+
+```{r}
+ggplot(data = gap, mapping = aes(x = gdpPercap, y = lifeExp)) +
+  geom_point()
+```
+
+If we want to visualize change over time, it is better to use a line plot:
+
+Instead of adding a `geom_point` layer, add a `geom_line` layer. We add the `by` aesthetic, which tells `ggplot` to draw a line for each country.
+
+```{r}
+ggplot(data = gap, mapping = aes(x=year, y=lifeExp, by=country)) +
+  geom_line()
+```
+
+But this is too messy. Let's color code by continent.
+
+```{r}
+ggplot(data = gap, mapping = aes(x=year, y=lifeExp, by=country, color=continent)) +
+  geom_line()
+```
+
+But what if we want to visualize both lines and points on the plot? We can add another layer to the plot. The `by` and `color` apply to both lines and points because they are general aesthetics of the plot.
+
+```{r lifeExp-line-point}
+ggplot(data = gap, mapping = aes(x=year, y=lifeExp, by=country, color=continent)) +
+  geom_line() + 
+  geom_point()
+```
+
+It's important to note that each layer is drawn on top of the previous layer. Let's demonstrate that points are drawn *on top of* the lines.
+
+```{r lifeExp-layer-example-1}
+ggplot(data = gap, mapping = aes(x=year, y=lifeExp, by=country)) +
+  geom_line(mapping = aes(color=continent)) + 
+  geom_point()
+```
+
+In this example, the *aesthetic* mapping of **color** has been moved from the global plot options in `ggplot` to the `geom_line` layer so it no longer applies to the points. Now we can clearly see that the points are drawn on top of the lines.
+
+There are two ways an *aesthetic* can be specified. 
+
+1. The `aes` function can define a *mapping* between data variables and their visual representation.  
+2. A setting outside of the `aes()` function will cause this value to be used for all points.
+
+```{r lifeExp}
+ggplot(data = gap, mapping = aes(x=year, y=lifeExp, by=country)) +
+  geom_line(mapping = aes(color=continent)) + 
+  geom_point(color="red")
+```
+
+## transformations/stats
+
+Example with log10 transformation
+
+```{r axis-scale}
+ggplot(data = gap, mapping = aes(x = gdpPercap, y = lifeExp)) +
+  geom_point(alpha = 0.5) + 
+  scale_x_log10()
+```
+
+The `log10` function applied a transformation to the values of the gdpPercap
+column before rendering them on the plot, so that each multiple of 10 now only corresponds to an increase in 1 on the transformed scale, e.g. a GDP per capita of 1,000 is now 3 on the x axis, a value of 10,000 corresponds to 4 on the x axis and so on. This makes it easier to visualize the spread of data on the x-axis.  
+
+The `alpha` function modified the transparency of the points.
+
+We can fit a simple relationship to the data by adding another layer:
+
+`geom_smooth`
+
+```{r lm-fit}
+ggplot(data = gap, mapping = aes(x = gdpPercap, y = lifeExp)) +
+  geom_point() + 
+  scale_x_log10() + 
+  geom_smooth(method = "lm", formula = "y ~ x", size = 1.5)
+```
+
+## panels
+
+We can create multiple panels by adding a layer of **facet** panels. Nearly everything in ggplot2 is customizable.
+
+```{r facet}
+americas <- gap[gap$continent == "Americas",]
+ggplot(data = americas, mapping = aes(x = year, y = lifeExp)) +
+  geom_line() +
+  facet_wrap(vars(country)) +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+The `facet_wrap` tells R to draw a panel for each unique value in the country column of the gapminder dataset.
+
+## text
+
+Change text elements.
+
+```{r theme}
+ggplot(data = americas, mapping = aes(x = year, y = lifeExp)) +
+  geom_line() + facet_wrap( ~ country) +
+  labs(
+    x = "Year",              # x axis title
+    y = "Life expectancy",   # y axis title
+    title = "Figure 1") +    # main title of figure
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## export
+
+```{r save}
+lifeExp_plot <- ggplot(data = americas, mapping = aes(x = year, y = lifeExp)) +
+  geom_line() + facet_wrap( ~ country) +
+  labs(
+    x = "Year",              # x axis title
+    y = "Life expectancy",   # y axis title
+    title = "Figure 1") +    # main title of figure
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggsave(filename = "results/lifeExp.png", 
+       plot = lifeExp_plot, 
+       width = 12, 
+       height = 10, 
+       dpi = 300, 
+       units = "cm")
+```
+
+
+# **functions** {.tabset}
+
+## basics
+
+Let's open a new R script file in the `functions/` directory and call it functions-lesson.R.
+
+Let's define a function `fahr_to_kelvin()` that converts temperatures from Fahrenheit to Kelvin:
+
+```{r}
+fahr_to_kelvin <- function(temp) {
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15
+  return(kelvin)
+}
+```
+
+Think of writing a cookbook. First, you define the “ingredients” that your function needs. In this case, we only need one ingredient to use our function: “temp”. After we list our ingredients, we then say what we will do with them, in this case, we are taking our ingredient and applying a set of mathematical operators to it. At the end, we use a return statement to send a result back to whoever asked for it.
+
+Actually, because it would be tedious having to state `return` all the time, we can do without it and also without an explicit assignment. R returns whatever it computed last.
+
+```{r}
+fahr_to_kelvin <- function(temp) {
+  ((temp - 32) * (5 / 9)) + 273.15
+}
+```
+
+But, it may be easier to be explicit about it.
+
+Let's try running our function.
+
+Calling our own function is no different from calling any other function:
+
+```{r}
+# freezing point of water
+fahr_to_kelvin(32)
+```
+
+```{r}
+# boiling point of water
+fahr_to_kelvin(212)
+```
+
+It is fine to use identical variables names outside and within a function. The variables in the workspace remain unaffected! (Encapsulation)
+
+```{r, eval=FALSE}
+kelvin <- 200
+temp_to_nonsense <- function(temp = 32, constant = 0) {
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15 - constant
+  return(kelvin)
+}
+```
+
+## defaults
+
+We can specify default values for the arguments. 
+
+```{r}
+temp_to_nonsense <- function(temp = 32, constant = 0) {
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15 - constant
+  return(kelvin)
+}
+```
+
+Call this function in various ways:
+
+```{r, eval=FALSE}
+temp_to_nonsense()
+temp_to_nonsense(32, 0) # same as above
+temp_to_nonsense(temp = 32, constant = 0) # same as above
+temp_to_nonsense(constant = 0, temp = 32) # with names, we can change the order
+```
+
+We can use these additional arguments to have smarter functions.
+
+```{r, eval=FALSE}
+temp_to_nonsense <- function(temp = 32, constant = NULL) {
+  if (!is.null(constant)){
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15 - constant
+  } else {
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15
+  }
+  return(kelvin)
+}
+```
+
+## check arguments
+
+`stopifnot()` is convenient to check for assumptions. The content in parentheses is what you want to be true for the function to work (because it stops if the condition is false).
+
+Let's check that temp is numeric.  
+
+```{r, eval=FALSE}
+fahr_to_kelvin <- function(temp) {
+  stopifnot(is.numeric(temp))
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15
+  return(kelvin)
+}
+```
+
+## advanced example {.tabset}
+
+Create function to check coloring of cats. It outputs a list with useful information.
+
+### create function
+
+```{r}
+cats <- data.frame(
+  coat = c("calico", "black", "tabby"),
+  weight = c(2.1, 5.0, 3.2),
+  likes_string = c(1, 0, 1),
+  stringsAsFactors = FALSE)
+newRow <- list("tortoiseshell", 3.3, 0)
+(cats <- rbind(cats, newRow))
+cats <- cats[sample(nrow(cats), 100, replace = TRUE),]
+row.names(cats) <- NULL
+
+colorcheck <- function(data = NULL, 
+                       target = "black"){
+  stopifnot(!is.null(data))
+  stopifnot("Target is not a character!" = is.character(data))
+  stopifnot(is.character(data) & is.character(target))
+
+  # logical vector
+  tf <- data %in% target
+  
+  # positions in vector
+  indx <- which(data %in% target)
+  
+  # number of matches
+  num <- length(indx)
+  names(num) <- "match count"
+  
+  out <- list(indata = data,
+              pattern = target,
+              nummatch = num,
+              logi = tf,
+              indx = indx)
+  return(out)
+}
+```
+
+### call function
+
+```{r}
+#colorcheck()
+colorcheck(data = "black")
+colorcheck(data = "black", target = "tabby")
+colorcheck(target = "tabby", data = "black")
+colorcheck("tabby")
+colorcheck("tabby", "black")
+
+catcol <- colorcheck(cats$coat, target = "black")
+catcol <- colorcheck(cats$coat, target = c("black, tabby"))
+catcol$nummatch
+catcol$indata[2]
+catcol[[1]][2]
+
+out1 <- colorcheck(cats$coat, target = "black")[3] # as list
+out2 <- colorcheck(cats$coat, target = "black")[[3]] # as named int
+out3 <- as.integer(colorcheck(cats$coat, target = "black")[[3]])
+```
+
+## source
+
+If you save a function in a separate R script, you can load in the function
+into our R session by using the `source()` function:  
+
+```{r, eval=FALSE}
+source("src/functions-lesson.R")
+```
+
+## conflict
+
+Different packages may use the same function names.  
+
+`dplyr::summarize()`  
+
+The `::` forces R to use `summarize` from the `dplyr` package.
+
+A handy feature is that if you call a function with `::`, R just requires that the packages is installed on your computer. The package does not have to be loaded at all. This is convenient, but the script will hang up if you share it with somebody who does not that have the function (and package) installed on their computer.
+
+# **challenges** {.tabset}
+
+## introduction {.tabset}
+
+### naming (1)
+
+Which of the following are valid R variable names?
+
+min_height  
+max.height  
+_age
+.mass  
+MaxLength  
+min-length  
+2widths  
+celsius2kelvin  
+
+```{r, eval=FALSE}
+solutions:
+min_height
+max.height
+MaxLength
+celsius2kelvin
+```
+
+### compute (2)
+
+What will be the value of each variable after each statement in the following program?
+
+mass <- 47.5  
+age <- 122  
+mass <- mass * 2.3  
+age <- age - 20
+
+```{r, eval=FALSE}
+mass <- 47.5
+age <- 122
+mass <- mass * 2.3
+age <- age - 20
+```
+
+### compare (3)
+
+Run the code from the previous challenge, and write a command to compare mass to age. Is mass larger than age?
+
+```{r, eval=FALSE}
+mass > age
+```
+
+### clean (4)
+
+Clean up your working environment by deleting the mass and age variables.
+
+```{r, eval=FALSE}
+rm(age, mass)
+```
+
+### install (5)
+
+Install the following packages: `ggplot2`, `plyr`, `gapminder`
+
+(Do not forget to load these packages if you want to use them.)
+
+```{r, eval=FALSE}
+install.packages("ggplot2") # to install a single package
+install.packages(c("ggplot2", "plyr", "gapminder"))
+```
+
+## help {.tabset}
+
+### c()
+
+Look at the help for the `c` function. What kind of vector do you expect you will create if you evaluate the following:
+
+c(1, 2, 3)  
+c('d', 'e', 'f')  
+c(1, 2, 'f')
+
+```{r, eval = FALSE}
+The `c()` function creates a vector, in which all elements are the same type. 
+
+In the first case, the elements are numeric
+in the second, they are characters
+in the third they are characters: the numeric values are "coerced" to be characters.
+```
+
+### paste()
+
+Look at the help for the `paste` function. You'll need to use this later.  
+What is the difference between the `sep` and `collapse` arguments?
+
+```{r, eval=FALSE}
+The difference between `sep` and `collapse` is a little tricky. 
+The `paste` function accepts any number of arguments, each of which can be a vector of any length. 
+The `sep` argument specifies the string used between concatenated terms — by default, a space. 
+The result is a vector as long as the longest argument supplied to `paste`. 
+In contrast, `collapse` specifies that after concatenation the elements are *collapsed*
+together using the given separator, the result being a single string.
+e.g. 
+
+paste(c("a","b"), "c")  
+paste(c("a","b"), "c", sep = ",")  
+paste(c("a","b"), "c", collapse = "|")  
+paste(c("a","b"), "c", sep = ",", collapse = "|")  
+```
+
+### read tab data
+
+Use help to find a function (and its associated parameters) that you could use to load data from a tabular file in which columns are delimited with "\t" (tab) and the decimal point is a `.` (period). This check for decimal separator is important, especially if you are working with international colleagues, because different countries have different conventions for the decimal point (i.e. comma vs period).
+
+hint: use `??"read table"` to look up functions related to reading in tabular data.
+
+```{r, eval=FALSE}
+The standard R function for reading tab-delimited files with a period decimal 
+separator is read.delim(). You can also do this with `read.table(file, sep="\t")` 
+(the period is the *default* decimal separator for `read.table()`, 
+although you may have to change the `comment.char` argument as well 
+if your data file contains hash (#) characters
+```
+
+## data type/structure {.tabset}
+
+### make vector
+
+Start by making a vector with the numbers 1 through 26. Multiply the vector by 2, and give the resulting vector names A through Z (hint: there is a built in vector called `LETTERS`)
+
+```{r, eval=FALSE}
+x <- 1:26
+x <- x * 2
+names(x) <- LETTERS
+```
+
+### check for factor
+
+Is there a factor in our `cats` data.frame? what is its name? Try using `?read.csv` to figure out how to keep text columns as character vectors instead of factors; then write a command to show that the factor in `cats` is actually a character vector when loaded in this way.
+
+```{r, eval = FALSE}
+One solution is use the argument `stringAsFactors`:
+cats <- read.csv(file="data/feline-data.csv", stringsAsFactors = FALSE)
+str(cats$coat)
+```
+
+```{r, eval = FALSE}
+Another solution is use the argument `colClasses` that allow finer control.
+cats <- read.csv(file="data/feline-data.csv", colClasses=c(NA, NA, "character"))
+str(cats$coat)
+```
+
+### call data.frames
+
+There are several subtly different ways to call variables, observations and elements from data.frames. Try out these examples and explain what is returned by each one.
+
+- `cats[1]`
+- `cats[[1]]`
+- `cats$coat`
+- `cats["coat"]`
+- `cats[1, 1]`
+- `cats[, 1]`
+- `cats[1, ]`
+
+### matrix length
+
+`matrix_example <- matrix(0, ncol=6, nrow=3)`
+
+What do you think will be the result of `length(matrix_example)`?
+
+```{r, eval=FALSE}
+matrix_example <- matrix(0, ncol=6, nrow=3)
+length(matrix_example)
+Because a matrix is a vector with added dimension attributes, `length`
+gives you the total number of elements in the matrix.
+```
+
+### fill matrix
+
+Make another matrix, this time containing the numbers 1:50, with 5 columns and 10 rows. 
+
+Did the `matrix` function fill your matrix by column, or by row, as its default behavior?
+
+See if you can figure out how to change this.
+
+(hint: read the documentation for `matrix`!)
+
+```{r, eval=FALSE}
+x <- matrix(1:50, ncol=5, nrow=10)
+x <- matrix(1:50, ncol=5, nrow=10, byrow = TRUE) # to fill by row
+```
+
+### make list
+
+Create a list of length two containing a character vector for these two:
+
+- data types
+- data structures
+
+Populate each character vector with the names of the data types and data
+structures we've seen so far.
+
+```{r, eval=FALSE}
+dataTypes <- c('double', 'complex', 'integer', 'character', 'logical')
+dataStructures <- c('data.frame', 'vector', 'factor', 'list', 'matrix')
+answer <- list(dataTypes, dataStructures)
+```
+
+### make matrix
+
+Consider the R output of the matrix below:
+
+```{r, echo=FALSE}
+matrix(c(4, 1, 9, 5, 10, 7), ncol = 2, byrow = TRUE)
+```
+
+What was the correct command used to write this matrix? Examine each command and try to figure out the correct one before typing them. Think about what matrices the other commands will produce.
+
+1. `matrix(c(4, 1, 9, 5, 10, 7), nrow = 3)`
+2. `matrix(c(4, 9, 10, 1, 5, 7), ncol = 2, byrow = TRUE)`
+3. `matrix(c(4, 9, 10, 1, 5, 7), nrow = 2)`
+4. `matrix(c(4, 1, 9, 5, 10, 7), ncol = 2, byrow = TRUE)`
+
+## data frame{.tabset}
+
+### nr 1
+
+Let's imagine that 1 cat year is equivalent to 7 human years.
+1. Create a vector called `human_age` by multiplying `cats$age` by 7.
+2. Convert `human_age` to a factor.
+3. Convert `human_age` back to a numeric vector using the `as.numeric()` function. Now divide it by 7 to get the original ages back. Explain what happened.
+
+```{r, eval=FALSE}
+1. `human_age <- cats$age * 7`
+2. `human_age <- factor(human_age)`. `as.factor(human_age)` works just as well.
+3. `as.numeric(human_age)` yields `1 2 3 4 4` because factors are stored as integers (here, 1:4), each of which is associated with a label (here, 28, 35, 56, and 63). Converting the factor to a numeric vector gives us the underlying integers, not the labels. If we want the original numbers, we need to convert `human_age` to a character vector (using `as.character(human_age)`) and then to a numeric vector (why does this work?). This comes up in real life when we accidentally include a character somewhere in a column of a .csv file supposed to only contain numbers, and forget to set `stringsAsFactors=FALSE` when we read in the data.
+```
+
+### nr 2
+
+You can create a new data frame right from within R with the following syntax:
+
+```{r}
+df <- data.frame(id = c("a", "b", "c"), 
+                 x = 1:3,
+                 y = c(TRUE, TRUE, FALSE),
+                 stringsAsFactors = FALSE)
+```
+
+Make a data frame that holds the following information:
+
+- d
+- 4
+- FALSE
+
+Then use `rbind` to add this entry.
+
+Finally, use `cbind` to add the column testscore with the values 28, 35, 18, 28
+
+```{r, eval=FALSE}
+df <- data.frame(id = c("a", "b", "c"),
+                 x = 1:3,
+                 y = c(TRUE, TRUE, FALSE),
+                 stringsAsFactors = FALSE)
+df <- rbind(df, list("d", "4", FALSE) )
+df <- cbind(df, testscore = c(28, 35, 18, 28)
+```
+
+### nr 3
+
+How would you list 15 rows at random?
+
+```{r, eval=FALSE}
+gapminder[sample(nrow(gapminder), 15), ]
+```
+
+### nr 4
+
+The `source` function can be used to use a script within a script. Assume you would like to load the same type of file over and over again and therefore you need to specify the arguments to fit the needs of your file. Instead of writing the necessary argument again and again you could just write it once and save it as a script. Then, you can use `source("Your_Script_containing_the_load_function")` in a new script to use the function of that script without writing everything again. Check out `?source` to find out more.
+
+Create your own source file with some code
+
+```{r, eval=FALSE}
+source(file = "scr/my_own_function.R")
+```
+
+### nr 5
+
+Read the output of `str(gapminder)` again; this time, use what you've learned about factors, lists and vectors, as well as the output of functions like `colnames` and `dim` to explain what everything that `str` prints out for gapminder means.
+
+```{r, eval=FALSE}
+The object `gapminder` is a data frame with columns
+- `country` and `continent` are factors.
+- `year` is an integer vector.
+- `pop`, `lifeExp`, and `gdpPercap` are numeric vectors.
+```
+
+## data subsetting {.tabset}
+
+### nr 1
+
+Given the following code:
+
+`x <- c(5.4, 6.2, 7.1, 4.8, 7.5)`  
+`names(x) <- c('a', 'b', 'c', 'd', 'e')`
+
+Come up with at least 2 different commands that will produce the following output:
+
+```{r, echo=FALSE}
+x <- c(5.4, 6.2, 7.1, 4.8, 7.5)
+names(x) <- c('a', 'b', 'c', 'd', 'e')
+x[2:4]
+```
+
+```{r, eval=FALSE}
+x[2:4]
+x[-c(1,5)]
+x[c(2,3,4)]
+```
+
+### nr 2
+
+Given the following code:
+
+`x <- c(5.4, 6.2, 7.1, 4.8, 7.5)`  
+`names(x) <- c('a', 'b', 'c', 'd', 'e')`  
+`print(x)` 
+
+Write a subsetting command to return the values in x that are greater than 4 and less than 7.
+
+```{r, eval=FALSE}
+x <- c(5.4, 6.2, 7.1, 4.8, 7.5)
+names(x) <- c('a', 'b', 'c', 'd', 'e')
+print(x)
+x_subset <- x[x<7 & x>4]
+print(x_subset)
+```
+
+### nr 3
+
+Selecting elements of a vector that match any of a list of components is a very common data analysis task. For example, the gapminder data set contains `country` and `continent` variables, but no information between these two scales. Suppose we want to pull out information from southeast Asia: how do we set up an operation to produce a logical vector that is `TRUE` for all of the countries in southeast Asia and `FALSE` otherwise?
+
+Suppose you have these data:
+
+```{r}
+seAsia <- c("Myanmar","Thailand","Cambodia","Vietnam","Laos")
+## read in the gapminder data that we downloaded in episode 2
+gapminder <- read.csv("data/gapminder_data.csv", header=TRUE)
+## extract the `country` column from a data frame (we'll see this later);
+## convert from a factor to a character;
+## and get just the non-repeated elements
+countries <- unique(as.character(gapminder$country))
+```
+
+```{r, eval=FALSE}
+The best way to do this problem is `countries %in% seAsia`.
+```
+
+### nr 4
+
+Given the following code:
+
+`m <- matrix(1:18, nrow=3, ncol=6)`
+
+Which of the following commands will extract the values 11 and 14?
+
+A. `m[2,4,2,5]`  
+B. `m[2:5]`  
+C. `m[4:5,2]`  
+D. `m[2,c(4,5)]`
+
+```{r, eval=FALSE}
+D
+```
+
+### nr 5
+
+Given the following list:
+
+`xlist <- list(a = "Software Carpentry", b = 1:10, data = head(mtcars))`
+
+Using your knowledge of both list and vector subsetting, extract the number 2 from xlist. Hint: the number 2 is contained within the "b" item in the list.
+
+```{r, eval=FALSE}
+xlist$b[2]
+xlist[[2]][2]
+xlist[["b"]][2]
+```
+
+### nr 6
+
+Given a linear model:
+
+`mod <- aov(pop ~ lifeExp, data=gapminder)`
+
+Extract the residual degrees of freedom (hint: `attributes()` will help you)
+
+```{r, eval=FALSE}
+attributes(mod) # `df.residual` is one of the names of `mod`
+mod$df.residual
+```
+
+### nr 7
+
+Fix each of the following common data frame subsetting errors:
+
+Extract observations collected for the year 1957
+
+`gapminder[gapminder$year = 1957,]`
+
+```{r, eval=FALSE}
+gapminder[gapminder$year == 1957,]
+```
+
+Extract all columns except 1 through to 4
+
+`gapminder[,-1:4]`
+
+```{r, eval=FALSE}
+gapminder[,-c(1:4)]
+```
+
+Extract the rows where the life expectancy is longer the 80 years
+
+`gapminder[gapminder$lifeExp > 80]`
+
+```{r, eval=FALSE}
+gapminder[gapminder$lifeExp > 80,]
+```
+
+Extract the first row, and the fourth and fifth columns (`continent` and `lifeExp`).
+
+`gapminder[1, 4, 5]`
+
+```{r, eval=FALSE}
+gapminder[1, c(4, 5)]
+gapminder[1, names(gapminder) %in% c("continent", "lifeExp")]
+```
+
+Extract rows that contain information for the years 2002 and 2007
+
+`gapminder[gapminder$year == 2002 | 2007,]`
+
+```{r, eval=FALSE}
+gapminder[gapminder$year == 2002 | gapminder$year == 2007,]
+gapminder[gapminder$year %in% c(2002, 2007),]
+```
+
+### nr 8
+
+Why does `gapminder[1:20]` return an error? How does it differ from `gapminder[1:20, ]`?
+
+Create a new `data.frame` called `gapminder_small` that only contains rows 1 through 9 and 19 through 23.
+
+```{r, eval=FALSE}
+`gapminder` is a data.frame so needs to be subsetted on two dimensions. 
+`gapminder[1:20, ]` subsets the data to give the first 20 rows and all columns.
+gapminder_small <- gapminder[c(1:9, 19:23),]
+```
+
+## graphics {.tabset}
+
+### nr 1
+
+Modify the example so that the figure shows how life expectancy has
+changed over time:  
+
+`ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) + geom_point()`  
+
+Hint: the gapminder dataset has a column called "year", which should appear
+on the x-axis.
+
+```{r, eval=FALSE}
+ggplot(data = gapminder, mapping = aes(x = year, y = lifeExp)) + geom_point()
+```
+
+### nr 2
+
+The `aes` function tells the scatterplot **geom** about the **x** and **y** locations of each point. Another *aesthetic* property we can modify is the point *color*. Modify the code from the previous challenge to **color** the points by the "continent" column. What trends do you see in the data? Are they what you expected?
+
+```{r, eval=FALSE}
+The solution presented below adds `color=continent` to the call of the `aes`
+function. The general trend seems to indicate an increased life expectancy
+over the years. On continents with stronger economies we find a longer life
+expectancy.
+ggplot(data = gapminder, mapping = aes(x = year, y = lifeExp, color=continent)) +
+  geom_point()
+```
+
+### nr 4a
+
+Modify the color and size of the points on the point layer in this example.  
+Hint: do not use the `aes` function.
+
+`ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) +
+ geom_point() + scale_x_log10() +
+ geom_smooth(method = "lm", formula = "y ~ x", size=1.5)`
+
+```{r, eval=FALSE}
+ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) +
+ geom_point(size=3, color="orange") + scale_x_log10() +
+ geom_smooth(method = "lm", formula = "y ~ x", size=1.5)
+```
+
+### nr 4b
+
+Modify the code so that all points are now a different shape and are colored by continent with new trendlines.
+
+Hint: The color argument can be used inside the aesthetic.
+
+`ggplot(data = gapminder, mapping = aes(x = gdpPercap, y = lifeExp)) +
+ geom_point() + scale_x_log10() +
+ geom_smooth(method = "lm", formula = "y ~ x", size=1.5)`
+ 
+```{r, eval=FALSE}
+Supplying the `color` argument inside the `aes()` functions enables you to
+connect it to a certain variable. The `shape` argument, as you can see, modifies all
+data points the same way (it is outside the `aes()` call) while the `color` argument which is placed inside the `aes()` call modifies point color based on its continent value.
+ggplot(data = gapminder, mapping = 
+         aes(x = gdpPercap, y = lifeExp, color = continent)) +
+ geom_point(size=3, color="orange", shape=17) + scale_x_log10() +
+ geom_smooth(method = "lm", formula = "y ~ x", size=1.5)
+```
+
+### nr 5
+
+Generate boxplots to compare life expectancy between the different continents during the available years.  
+Advanced:  
+
+ - Rename y axis as Life Expectancy.
+ - Remove x axis labels.
+ 
+```{r, eval=FALSE}
+ggplot(data = gapminder, mapping = aes(x = continent, y = lifeExp, fill = continent)) +
+ geom_boxplot() + facet_wrap(~year) +
+ ylab("Life Expectancy") +
+ theme(axis.title.x=element_blank(),
+       axis.text.x = element_blank(),
+       axis.ticks.x = element_blank())
+```
+
+### nr 2 (from vect)
+
+On a single graph, plot population, in millions, against year, for all countries. Do not worry about identifying which country is which.
+
+Repeat the exercise, graphing only for China, India, and Indonesia. Again, do not worry about which is which.
+
+```{r, eval=FALSE}
+ggplot(gapminder, aes(x = year, y = pop_millions)) +
+ geom_point()
+countryset <- c("China","India","Indonesia")
+ggplot(gapminder[gapminder$country %in% countryset,],
+       aes(x = year, y = pop_millions)) +
+  geom_point()
+```
+
+## vectorization {.tabset}
+
+### nr 1
+
+Make a new column in the `gapminder` data frame that contains population in units of millions of people. Check the head or tail of the data frame to make sure it worked.
+
+```{r, eval=FALSE}
+gapminder$pop_millions <- gapminder$pop / 1e6
+head(gapminder)
+```
+
+### nr 3
+
+Given the following matrix:
+
+```{r}
+(m <- matrix(1:12, nrow=3, ncol=4))
+```
+
+Write down what you think will happen when you run:  
+
+1. `m ^ -1`
+2. `m * c(1, 0, -1)`
+3. `m > c(0, 20)`
+4. `m * c(1, 0, -1, 2)`
+
+```{r, echo=FALSE}
+m ^ -1
+m * c(1, 0, -1)
+m > c(0, 20)
+m * c(1, 0, -1, 2)
+```
+
+### nr 4
+
+We're interested in looking at the sum of the following sequence of fractions:
+
+`x = 1/(1^2) + 1/(2^2) + 1/(3^2) + ... + 1/(n^2)`  
+
+Use vectorization to compute x when n=100.  
+What is the sum when n=10,000?
+
+```{r, eval=FALSE}
+sum(1/(1:100)^2)
+sum(1/(1:1e04)^2)
+n <- 10000
+sum(1/(1:n)^2)
+```
+
+We can obtain the same results using a function:
+
+```{r, eval=FALSE}
+inverse_sum_of_squares <- function(n) {
+  sum(1/(1:n)^2)
+}
+inverse_sum_of_squares(100)
+inverse_sum_of_squares(10000)
+n <- 10000
+inverse_sum_of_squares(n)
+```
+
+## functions {.tabset}
+
+### nr 1
+
+Write a function called `kelvin_to_celsius()` that takes a temperature in Kelvin and returns that temperature in Celsius.
+
+Hint: To convert from Kelvin to Celsius you subtract 273.15
+
+```{r, eval=FALSE}
+kelvin_to_celsius <- function(temp) {
+  celsius <- temp - 273.15
+  return(celsius)
+}
+```
+
+### nr 2
+
+Define a function to convert directly from Fahrenheit to Celsius, by reusing the two functions below (or using your own functions if you prefer).
+
+```{r}
+fahr_to_kelvin <- function(temp) {
+  kelvin <- ((temp - 32) * (5 / 9)) + 273.15
+  return(kelvin)
+}
+
+kelvin_to_celsius <- function(temp) {
+  celsius <- temp - 273.15
+  return(celsius)
+}
+```
+
+```{r, eval=FALSE}
+fahr_to_celsius <- function(temp) {
+  temp_k <- fahr_to_kelvin(temp)
+  result <- kelvin_to_celsius(temp_k)
+  return(result)
+}
+```
+
+### nr 5
+
+Write a function called `fence()` that takes two vectors as arguments, called `text` and `wrapper`, and prints out the text wrapped with the `wrapper`:
+
+`fence(text=best_practice, wrapper="***")`
+
+The `paste()` function has an argument called `sep`, which specifies the separator between text. The default is a space: " ". The default for `paste0()` is no space "".
+
+```{r, eval=FALSE}
+fence <- function(text, wrapper){
+  text <- c(wrapper, text, wrapper)
+  result <- paste(text, collapse = " ")
+  return(result)
+}
+best_practice <- c("Write", "programs", "for", "people", "not", "computers")
+fence(text=best_practice, wrapper="***")
+```
