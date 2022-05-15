@@ -1,0 +1,289 @@
+---
+title: "R for reproducible scientific analysis"
+subtitle: "Student version"
+author: "Stefan Wiens"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    df_print: paged
+    highlight: tango
+    theme: united
+    toc: yes
+    toc_float:
+      collapsed: yes
+      smooth_scroll: yes
+    keep_md: true 
+---
+
+```{r setup, include=FALSE}
+#'echo = False' hides *all* code chunks below when knitted 
+#'warning = F' hides *all* warnings messages below when knitted 
+#'message = F' hides *all* messages below when knitted 
+# fig.path directory for figures
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+                      #fig.path = "figures/extra/")
+#options(scipen = 999, digits = 7) # prevent scientific notation
+options(repos = list(CRAN="http://cran.rstudio.com/"))
+```
+
+```{r prepare R, echo = FALSE, include = FALSE}
+# clear memory and set random seed
+rm(list = ls()) # clear memory
+graphics.off()  # clear all plots
+cat("\014")     # clear console (same as Ctrl-L in console)
+```
+
+The content is mostly a condensed version of this material:
+
+[http://swcarpentry.github.io/r-novice-gapminder/](http://swcarpentry.github.io/r-novice-gapminder/)
+
+Since then, I have added extra material that I picked up from the R crowd.
+
+I highly recommend this book:
+
+[R for Data Science](https://r4ds.had.co.nz/)
+
+# short-cuts {.tabset}
+
+## R
+
+- `#` comment. Anything that follows after is ignored by R
+- `ctrl + return` run block of code
+- `?` before the name of a command will open the help page for that command. When using RStudio, this will open the ‘Help’ pane. You can also use the function `help(function_name)`
+- `alt + -` produces the assign symbol `<-`
+- `(x <- 5)` if you have parentheses around an assignment, the result will be printed
+- `ctrl + shift + M` to get pipe symbol `%>%`
+- ======
+- `typeof()` determine data type
+- `class()` determine data structure
+- `str()` display structure of an object
+- ======
+- `getwd()` show working directory
+- `setwd()` set working directory
+- `dir()` show files working directory
+- `ls()` show content in Rstudio environment
+- `rm(list = ls())` delete everything in environment
+- ======
+- `install.packages("ggplot2")`to install an R package/library on computer
+- `library("ggplot2")`to activate the package for the current R session
+- `head()` show beginning of file
+- `tail()` show end of file
+- `nrow()` number of rows
+- `c()` combine elements
+- `summary()` display summary
+
+## R markdown
+
+- `ctrl + alt + I` new r code section
+- `ctrl + shift + K` knit whole document
+- `>` for block code
+- `[//]: My comment` The text is not printed at all in the final document
+- `knitr::knit_exit()` If you have this in a code chunk, knitr will exit there. This is useful during debugging.
+- `keep_md: true` With this in front-matter, all figures will be saved as separate files, too.
+
+# **packages** {.tabset}
+
+R mainly works with functions such as `mean(age)`; this computes the mean of age.
+
+Functions always consist of a name and parentheses: `function_name()`
+
+The power of R is the many custom-made packages with useful functions. To add these functions to R, you need to do two things:
+
+- `install(packagename)`: download on your computer
+- `library(packagename)`: load for current R session
+
+There are lots of packages available on **CRAN** (the comprehensive R archive network). 
+
+## finding packages
+
+If you don't know what function or package you need to use: [CRAN Task Views](http://cran.at.r-project.org/web/views) is a specially maintained list of packages grouped into fields. This can be a good starting point.
+
+## basic R
+
+R and RStudio have functionality for managing packages:
+
+* You can see what packages are installed by typing
+  `installed.packages()`
+* You can install packages by typing `install.packages("packagename")`,
+  where `packagename` is the package name, in quotes.
+* You can update installed packages by typing `update.packages()`
+* You can remove a package with `remove.packages("packagename")`
+* You can make a package available for use with `library(packagename)`
+
+Packages can also be viewed, loaded, and detached in the Packages tab of the lower right panel in RStudio. Clicking on this tab will display all of installed packages with a checkbox next to them. If the box next to a package name is checked, the package is loaded and if it is empty, the package is not loaded. Click an empty box to load that package and click a checked box to detach that package. 
+
+Packages can be installed and updated from the Package tab with the Install and Update buttons at the top of the tab.
+
+## pacman
+
+A simple way to install and load packages is with the package `pacman`.
+
+Install this package (e.g., under Tools > Install Packages)
+
+Afterward, run `library(pacman)` or activate the package under the packages tab.
+
+Then, `p_load()` will install and load packages.
+
+```{r, eval = FALSE}
+install.packages("pacman")
+library(pacman)
+p_load(tidyverse, kableExtra, report)
+```
+
+## own solution
+
+**`r version[['version.string']]`**  
+
+```{r}
+packages <- c('tidyverse',     # data handling
+              'kableExtra',    # nicer tables    
+              'report')        # bibliography of packages
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages], repos = c(CRAN = "https://cran.rstudio.com"))
+}
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+
+packv <- NULL
+for (i in 1:length(packages)) {
+  packv = rbind(packv, c(packages[i], as.character(packageVersion(packages[i]))))
+}
+colnames(packv) <- c("Package", "Version") 
+packv %>% 
+  as_tibble %>% 
+  arrange(Package) %>% 
+  kable(align = "l") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+## cite packages
+
+The `report` package creates a bibliography of the packages. Unfortunately, my experience is that the information is often sketchy and the formating is a complete mess.
+
+```{r}
+report::cite_packages()
+```
+
+# seeking help {.tabset}
+
+## google
+
+Google works well because it can handle naive questions in everyday language.  
+
+## cheat sheets
+
+RStudio has nice cheat sheets for RStudio and tidyverse packages (under Help > Cheat Sheets > Browse Cheat Sheets).    
+[RStudio cheat sheets](https://www.rstudio.com/resources/cheatsheets/)  
+
+## function help
+
+In R, you can get help for a function:  
+
+`?function_name`
+
+`help(function_name)`
+
+R, and every package, provide help files for functions. Above is the general syntax to search for help on any function that is loaded in your session.
+
+```{r, eval=FALSE}
+?function_name
+help(function_name)
+```
+
+This opens a help page in RStudio (or as plain text in R by itself).
+
+## help pages
+
+Each help page is broken down into sections:
+
+ - Description: An extended description of what the function does.
+ - Usage: The arguments of the function and their default values.
+ - Arguments: An explanation of the data each argument is expecting.
+ - Details: Any important details to be aware of.
+ - Value: The data the function returns.
+ - See Also: Any related functions you might find useful.
+ - Examples: Some examples for how to use the function.
+
+Different functions might have different sections, but these are the main ones you should be aware of.
+
+## special operators
+
+To seek help on special operators, use quotes or backticks:
+
+`?"<-"`
+
+```{r, eval=FALSE}
+?"<-"
+?`<-`
+```
+
+## fuzzy search
+
+If you're not sure what package a function is in, or how it's specifically spelled you can do a fuzzy search:
+
+```{r, eval=FALSE}
+??function_name
+```
+
+# warnings
+
+R often outputs messages in red. Do not freak out. They can be just notifications or warnings. They are added to ensure that you are ok with what R is doing.
+
+If you load several packages, you are likely to see `conflicts` about some function `masking` another function. This means that two functions from different packages have the same name. R uses whatever is loaded last as the default one.
+
+Example:
+
+`dplyr::filter() masks stats::filter()`
+
+This means that if you call `filter()`, R will use the function from the package dplyr.
+
+If you want use both filter functions in your code, you can call a specific function like this:
+
+`stats::filter()`
+
+A handy feature is that if you call a function with `::`, R just requires that the packages is installed on your computer. The package does not have to be loaded at all. This is convenient, but the script will hang up if you share it with somebody who does not that have the function (and package) installed on their computer.
+
+Every now and then, I happen to have installed too many packages that conflict with each other and everything is messed up. For example, `tidyverse` would not work anymore. If so, you might have to remove R and RStudio and reinstall everything.
+
+# update
+
+- Update RStudio 
+  - go to Help
+  - check for Updates
+- Update R: 
+  - start Rgui in Windows
+  - install.packages("installr")
+  - library(installr)
+  - updateR()
+
+# project management
+
+Lots of good information by Carpentries.  
+
+[project management](https://swcarpentry.github.io/r-novice-gapminder/02-project-intro/index.html)
+
+key points:  
+
+- use RStudio to create and manage projects with consistent layout.
+- treat raw data as read-only.
+- treat generated output as disposable.
+- separate definition of function and its application.
+
+[Good Enough Practices for Scientific Computing](https://github.com/swcarpentry/good-enough-practices-in-scientific-computing/blob/gh-pages/good-enough-practices-for-scientific-computing.pdf) gives the following recommendations for project organization:
+
+- Put each project in its own directory, which is named after the project.
+- Put text documents associated with the project in the `doc` directory.
+- Put raw data and metadata in the `data` directory, and files generated during cleanup and analysis in a `results` directory.
+- Put source for the project's scripts and programs in the `src` directory, and programs brought in from elsewhere or compiled locally in the `bin` directory.
+- Name all files to reflect their content or function.
+
+```{r}
+
+```
+
