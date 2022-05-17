@@ -968,6 +968,53 @@ df_gapminder <- gapminder
 # gapminder <- gapminder # we would overwrite the content of gapminder
 ```
 
+# simple stats {.tabset}
+
+## correlation
+
+Correlate life expectancy and income.
+
+```{r}
+cor.test(x = gap$lifeExp,
+         y = gap$gdpPercap)
+```
+
+Access only correlation.
+
+```{r}
+tmp <-  cor.test(x = gap$lifeExp,
+                 y = gap$gdpPercap)
+tmp$estimate
+```
+
+Show results in the regular text: 
+
+The correlation was `r tmp$estimate`.
+
+## *t* test
+
+Compare the mean life expectancy of countries in Asia and Africa (include all years).
+
+```{r}
+#table(gap$continent)
+t.test(x = gap$lifeExp[gap$continent == "Asia"],
+       y = gap$lifeExp[gap$continent == "Africa"])
+```
+
+Access only LL and UL of 95%CI.
+
+```{r}
+tmp <-  t.test(x = gap$lifeExp[gap$continent == "Asia"],
+                   y = gap$lifeExp[gap$continent == "Africa"])
+tmp$conf.int[1]
+tmp$conf.int[2]
+```
+
+Show results in the regular text:
+
+- LL = `r tmp$conf.int[1]`
+- UL = `r tmp$conf.int[2]`
+
 # **export data**
 
 Lots of functionality in basic R and through `tidyverse`. 
