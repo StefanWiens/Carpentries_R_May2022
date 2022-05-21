@@ -1,4 +1,4 @@
-As part of the Stockholm Trio (SU, KI, KTH), I helped organizing this [course](https://kth-biblioteket.github.io/2022-05-16-StockholmTrio/)
+As part of the Stockholm Trio (SU, KI, KTH), I helped organize this [course](https://kth-biblioteket.github.io/2022-05-16-StockholmTrio/).
 
 This was run under [Carpentries](https://carpentries.org/).
 
